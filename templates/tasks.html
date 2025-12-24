@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Tasks - Task Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/dashboard">📋 Task Manager</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dashboard">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/tasks">My Tasks</a>
+                    </li>
+                </ul>
+                <button class="btn btn-outline-light" onclick="logout()">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0" id="form-title">Add New Task</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="task-form">
+                            <input type="hidden" id="task-id">
+                            
+                            <div class="mb-3">
+                                <label for="title" class="form-label">Title *</label>
+                                <input type="text" class="form-control" id="title" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="description" class="form-label">Description</label>
+                                <textarea class="form-control" id="description" rows="3"></textarea>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="category" class="form-label">Category</label>
+                                <select class="form-select" id="category">
+                                    <option value="">No Category</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="due-date" class="form-label">Due Date</label>
+                                <input type="date" class="form-control" id="due-date">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="status" class="form-label">Status</label>
+                                <select class="form-select" id="status">
+                                    <option value="pending">Pending</option>
+                                    <option value="in-progress">In Progress</option>
+                                    <option value="completed">Completed</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="priority" class="form-label">Priority</label>
+                                <select class="form-select" id="priority">
+                                    <option value="low">Low</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="high">High</option>
+                                </select>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary" id="submit-btn">Add Task</button>
+                                <button type="button" class="btn btn-secondary" id="cancel-btn" style="display: none;">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Category Management -->
+                <div class="card shadow-sm">
+                    <div class="card-header bg-success text-white">
+                        <h6 class="mb-0">Manage Categories</h6>
+                    </div>
+                    <div class="card-body">
+                        <form id="category-form" class="mb-3">
+                            <div class="input-group mb-2">
+                                <input type="text" class="form-control" id="category-name" placeholder="Category name" required>
+                                <input type="color" class="form-control form-control-color" id="category-color" value="#6c757d">
+                            </div>
+                            <button type="submit" class="btn btn-success btn-sm w-100">Add Category</button>
+                        </form>
+                        <div id="categories-list"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-8">
+                <!-- Search and Filters -->
+                <div class="card shadow-sm mb-3">
+                    <div class="card-body">
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <input type="text" class="form-control" id="search" placeholder="🔍 Search tasks...">
+                            </div>
+                            <div class="col-md-2">
+                                <select class="form-select" id="filter-status">
+                                    <option value="">All Status</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="in-progress">In Progress</option>
+                                    <option value="completed">Completed</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <select class="form-select" id="filter-priority">
+                                    <option value="">All Priority</option>
+                                    <option value="low">Low</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="high">High</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <select class="form-select" id="filter-category">
+                                    <option value="">All Categories</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button class="btn btn-secondary w-100" onclick="clearFilters()">Clear</button>
+                            </div>
+                        </div>
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" id="filter-overdue">
+                            <label class="form-check-label" for="filter-overdue">
+                                Show only overdue tasks
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">All Tasks</h5>
+                        <span id="task-count" class="badge bg-light text-dark">0</span>
+                    </div>
+                    <div class="card-body">
+                        <div id="tasks-container">
+                            <p class="text-center text-muted">Loading tasks...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let editMode = false;
+        let editTaskId = null;
+        let categories = [];
+
+        async function loadCategories() {
+            try {
+                const response = await fetch('/api/categories');
+                if (response.status === 401) {
+                    window.location.href = '/';
+                    return;
+                }
+                categories = await response.json();
+                
+                const categorySelect = document.getElementById('category');
+                const filterCategory = document.getElementById('filter-category');
+                const categoryList = document.getElementById('categories-list');
+                
+                categorySelect.innerHTML = '<option value="">No Category</option>';
+                filterCategory.innerHTML = '<option value="">All Categories</option>';
+                
+                categories.forEach(cat => {
+                    categorySelect.innerHTML += `<option value="${cat.id}">${cat.name}</option>`;
+                    filterCategory.innerHTML += `<option value="${cat.id}">${cat.name}</option>`;
+                });
+                
+                categoryList.innerHTML = categories.map(cat => `
+                    <div class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded" style="border-left: 4px solid ${cat.color} !important">
+                        <span>${cat.name} (${cat.task_count})</span>
+                        <button class="btn btn-sm btn-danger" onclick="deleteCategory(${cat.id})">×</button>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading categories:', error);
+            }
+        }
+
+        async function loadTasks() {
+            try {
+                const search = document.getElementById('search').value;
+                const status = document.getElementById('filter-status').value;
+                const priority = document.getElementById('filter-priority').value;
+                const categoryId = document.getElementById('filter-category').value;
+                const overdue = document.getElementById('filter-overdue').checked;
+                
+                const params = new URLSearchParams();
+                if (search) params.append('search', search);
+                if (status) params.append('status', status);
+                if (priority) params.append('priority', priority);
+                if (categoryId) params.append('category_id', categoryId);
+                if (overdue) params.append('overdue', 'true');
+                
+                const response = await fetch(`/api/tasks?${params}`);
+                if (response.status === 401) {
+                    window.location.href = '/';
+                    return;
+                }
+                const tasks = await response.json();
+                displayTasks(tasks);
+            } catch (error) {
+                console.error('Error loading tasks:', error);
+            }
+        }
+
+        function displayTasks(tasks) {
+            const container = document.getElementById('tasks-container');
+            document.getElementById('task-count').textContent = tasks.length;
+            
+            if (tasks.length === 0) {
+                container.innerHTML = '<p class="text-center text-muted">No tasks found</p>';
+                return;
+            }
+            
+            container.innerHTML = tasks.map(task => `
+                <div class="task-card mb-3 p-3 border rounded ${getStatusClass(task.status)} ${task.is_overdue ? 'border-danger' : ''}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <h5 class="mb-1">${escapeHtml(task.title)} ${task.is_overdue ? '<span class="badge bg-danger">OVERDUE</span>' : ''}</h5>
+                            ${task.description ? `<p class="text-muted mb-2">${escapeHtml(task.description)}</p>` : ''}
+                            <div class="d-flex gap-2 flex-wrap">
+                                ${task.category_name ? `<span class="badge" style="background-color: ${task.category_color}">${task.category_name}</span>` : ''}
+                                <span class="badge bg-${getPriorityColor(task.priority)}">${task.priority}</span>
+                                <span class="badge bg-${getStatusColor(task.status)}">${task.status}</span>
+                                ${task.due_date ? `<span class="badge bg-secondary">📅 ${task.due_date}</span>` : ''}
+                                <small class="text-muted">Created: ${task.created_at}</small>
+                            </div>
+                        </div>
+                        <div class="btn-group-vertical btn-group-sm">
+                            <button class="btn btn-outline-primary" onclick="editTask(${task.id})">Edit</button>
+                            <button class="btn btn-outline-danger" onclick="deleteTask(${task.id})">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getStatusClass(status) {
+            return {'pending': 'border-warning', 'in-progress': 'border-info', 'completed': 'border-success'}[status] || '';
+        }
+
+        function getPriorityColor(priority) {
+            return {'low': 'secondary', 'medium': 'info', 'high': 'danger'}[priority] || 'secondary';
+        }
+
+        function getStatusColor(status) {
+            return {'pending': 'warning', 'in-progress': 'info', 'completed': 'success'}[status] || 'secondary';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        document.getElementById('task-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const taskData = {
+                title: document.getElementById('title').value,
+                description: document.getElementById('description').value,
+                status: document.getElementById('status').value,
+                priority: document.getElementById('priority').value,
+                category_id: document.getElementById('category').value || null,
+                due_date: document.getElementById('due-date').value || null
+            };
+            
+            try {
+                let response;
+                if (editMode) {
+                    response = await fetch(`/api/tasks/${editTaskId}`, {
+                        method: 'PUT',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(taskData)
+                    });
+                } else {
+                    response = await fetch('/api/tasks', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(taskData)
+                    });
+                }
+                
+                if (response.ok) {
+                    document.getElementById('task-form').reset();
+                    cancelEdit();
+                    loadTasks();
+                    loadCategories();
+                }
+            } catch (error) {
+                console.error('Error saving task:', error);
+            }
+        });
+
+        document.getElementById('category-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const categoryData = {
+                name: document.getElementById('category-name').value,
+                color: document.getElementById('category-color').value
+            };
+            
+            try {
+                const response = await fetch('/api/categories', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(categoryData)
+                });
+                
+                if (response.ok) {
+                    document.getElementById('category-form').reset();
+                    loadCategories();
+                }
+            } catch (error) {
+                console.error('Error creating category:', error);
+            }
+        });
+
+        async function deleteCategory(id) {
+            if (!confirm('Delete this category? Tasks will not be deleted.')) return;
+            
+            try {
+                await fetch(`/api/categories/${id}`, {method: 'DELETE'});
+                loadCategories();
+                loadTasks();
+            } catch (error) {
+                console.error('Error deleting category:', error);
+            }
+        }
+
+        async function editTask(id) {
+            try {
+                const response = await fetch(`/api/tasks/${id}`);
+                const task = await response.json();
+                
+                document.getElementById('task-id').value = task.id;
+                document.getElementById('title').value = task.title;
+                document.getElementById('description').value = task.description;
+                document.getElementById('status').value = task.status;
+                document.getElementById('priority').value = task.priority;
+                document.getElementById('category').value = task.category_id || '';
+                document.getElementById('due-date').value = task.due_date || '';
+                
+                editMode = true;
+                editTaskId = id;
+                document.getElementById('form-title').textContent = 'Edit Task';
+                document.getElementById('submit-btn').textContent = 'Update Task';
+                document.getElementById('cancel-btn').style.display = 'block';
+                
+                window.scrollTo({top: 0, behavior: 'smooth'});
+            } catch (error) {
+                console.error('Error loading task:', error);
+            }
+        }
+
+        async function deleteTask(id) {
+            if (!confirm('Delete this task?')) return;
+            
+            try {
+                await fetch(`/api/tasks/${id}`, {method: 'DELETE'});
+                loadTasks();
+                loadCategories();
+            } catch (error) {
+                console.error('Error deleting task:', error);
+            }
+        }
+
+        function cancelEdit() {
+            editMode = false;
+            editTaskId = null;
+            document.getElementById('form-title').textContent = 'Add New Task';
+            document.getElementById('submit-btn').textContent = 'Add Task';
+            document.getElementById('cancel-btn').style.display = 'none';
+            document.getElementById('task-form').reset();
+        }
+
+        function clearFilters() {
+            document.getElementById('search').value = '';
+            document.getElementById('filter-status').value = '';
+            document.getElementById('filter-priority').value = '';
+            document.getElementById('filter-category').value = '';
+            document.getElementById('filter-overdue').checked = false;
+            loadTasks();
+        }
+
+        async function logout() {
+            await fetch('/api/logout', {method: 'POST'});
+            window.location.href = '/';
+        }
+
+        document.getElementById('cancel-btn').addEventListener('click', cancelEdit);
+        document.getElementById('search').addEventListener('input', loadTasks);
+        document.getElementById('filter-status').addEventListener('change', loadTasks);
+        document.getElementById('filter-priority').addEventListener('change', loadTasks);
+        document.getElementById('filter-category').addEventListener('change', loadTasks);
+        document.getElementById('filter-overdue').addEventListener('change', loadTasks);
+
+        loadCategories();
+        loadTasks();
+    </script>
+</body>
+</html>
