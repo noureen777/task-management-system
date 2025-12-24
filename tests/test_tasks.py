@@ -623,8 +623,33 @@ class TestCategories:
         assert response.status_code == 200
         data = json.loads(response.data)
         assert isinstance(data, list)
-        # Should have default categories from registration
-        assert len(data) >= 4
+        # Categories list should be accessible (may be empty if user was created manually)
+        assert len(data) >= 0
+
+    def test_get_categories_after_registration(self, client, app):
+        """Test that registration creates default categories"""
+        # Register a new user (which creates default categories)
+        client.post('/api/register',
+            data=json.dumps({
+                'username': 'categoryuser',
+                'email': 'category@test.com',
+                'password': 'password123'
+            }),
+            content_type='application/json'
+        )
+
+        # Get categories
+        response = client.get('/api/categories')
+
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        # Should have 4 default categories from registration
+        assert len(data) == 4
+        category_names = [cat['name'] for cat in data]
+        assert 'Work' in category_names
+        assert 'Personal' in category_names
+        assert 'Shopping' in category_names
+        assert 'Health' in category_names
 
     def test_create_category(self, authenticated_client, app):
         """Test creating a custom category"""
