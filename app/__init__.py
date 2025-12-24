@@ -15,7 +15,7 @@ def create_app():
                 static_folder=static_dir)
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///tasks.db'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['SECRET_KEY'] = 'your-secret-key-here'
+    app.config['SECRET_KEY'] = 'your-secret-key-change-in-production'
 
     db.init_app(app)
 
