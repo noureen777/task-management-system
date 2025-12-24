@@ -1,0 +1,73 @@
+body {
+    background-color: #f8f9fa;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.navbar-brand {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.card {
+    border: none;
+    border-radius: 10px;
+}
+
+.card-header {
+    border-radius: 10px 10px 0 0 !important;
+    font-weight: 600;
+}
+
+.task-card {
+    background-color: white;
+    transition: all 0.3s ease;
+    border-width: 2px !important;
+}
+
+    .task-card:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+
+.form-label {
+    font-weight: 500;
+    color: #495057;
+}
+
+.btn-group-vertical {
+    min-width: 80px;
+}
+
+.badge {
+    font-weight: 500;
+    padding: 0.35em 0.65em;
+}
+
+#tasks-container {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+    #tasks-container::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    #tasks-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+
+    #tasks-container::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 10px;
+    }
+
+        #tasks-container::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+@media (max-width: 768px) {
+    .col-md-4, .col-md-8 {
+        margin-bottom: 1rem;
+    }
+}
