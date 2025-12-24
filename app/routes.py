@@ -1,10 +1,4 @@
-# Backup the old file first
-cp
-app / routes.py
-app / routes.py.old
 
-# Now create the new routes.py
-cat > app / routes.py << 'EOF'
 from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for
 from functools import wraps
 from app import db
@@ -310,4 +304,3 @@ def get_stats():
     })
 
 
-EOF
