@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-primary mb-4">
+        <div class="container">
+            <span class="navbar-brand mb-0 h1">📋 Task Management System</span>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0" id="form-title">Add New Task</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="task-form">
+                            <input type="hidden" id="task-id">
+                            
+                            <div class="mb-3">
+                                <label for="title" class="form-label">Title *</label>
+                                <input type="text" class="form-control" id="title" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="description" class="form-label">Description</label>
+                                <textarea class="form-control" id="description" rows="3"></textarea>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="status" class="form-label">Status</label>
+                                <select class="form-select" id="status">
+                                    <option value="pending">Pending</option>
+                                    <option value="in-progress">In Progress</option>
+                                    <option value="completed">Completed</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="priority" class="form-label">Priority</label>
+                                <select class="form-select" id="priority">
+                                    <option value="low">Low</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="high">High</option>
+                                </select>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary" id="submit-btn">Add Task</button>
+                                <button type="button" class="btn btn-secondary" id="cancel-btn" style="display: none;">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-8">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">All Tasks</h5>
+                        <span id="task-count" class="badge bg-light text-dark">0</span>
+                    </div>
+                    <div class="card-body">
+                        <div id="tasks-container">
+                            <p class="text-center text-muted">Loading tasks...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let editMode = false;
+        let editTaskId = null;
+
+        async function loadTasks() {
+            try {
+                const response = await fetch('/api/tasks');
+                const tasks = await response.json();
+                displayTasks(tasks);
+            } catch (error) {
+                console.error('Error loading tasks:', error);
+                document.getElementById('tasks-container').innerHTML = 
+                    '<p class="text-danger text-center">Error loading tasks</p>';
+            }
+        }
+
+        function displayTasks(tasks) {
+            const container = document.getElementById('tasks-container');
+            document.getElementById('task-count').textContent = tasks.length;
+            
+            if (tasks.length === 0) {
+                container.innerHTML = '<p class="text-center text-muted">No tasks yet. Add one to get started!</p>';
+                return;
+            }
+            
+            container.innerHTML = tasks.map(task => `
+                <div class="task-card mb-3 p-3 border rounded ${getStatusClass(task.status)}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <h5 class="mb-1">${escapeHtml(task.title)}</h5>
+                            ${task.description ? `<p class="text-muted mb-2">${escapeHtml(task.description)}</p>` : ''}
+                            <div class="d-flex gap-2 flex-wrap">
+                                <span class="badge bg-${getPriorityColor(task.priority)}">${task.priority}</span>
+                                <span class="badge bg-${getStatusColor(task.status)}">${task.status}</span>
+                                <small class="text-muted">Created: ${task.created_at}</small>
+                            </div>
+                        </div>
+                        <div class="btn-group-vertical btn-group-sm">
+                            <button class="btn btn-outline-primary" onclick="editTask(${task.id})">Edit</button>
+                            <button class="btn btn-outline-danger" onclick="deleteTask(${task.id})">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getStatusClass(status) {
+            const classes = {
+                'pending': 'border-warning',
+                'in-progress': 'border-info',
+                'completed': 'border-success'
+            };
+            return classes[status] || '';
+        }
+
+        function getPriorityColor(priority) {
+            const colors = {
+                'low': 'secondary',
+                'medium': 'info',
+                'high': 'danger'
+            };
+            return colors[priority] || 'secondary';
+        }
+
+        function getStatusColor(status) {
+            const colors = {
+                'pending': 'warning',
+                'in-progress': 'info',
+                'completed': 'success'
+            };
+            return colors[status] || 'secondary';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        document.getElementById('task-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const taskData = {
+                title: document.getElementById('title').value,
+                description: document.getElementById('description').value,
+                status: document.getElementById('status').value,
+                priority: document.getElementById('priority').value
+            };
+            
+            try {
+                let response;
+                if (editMode) {
+                    response = await fetch(`/api/tasks/${editTaskId}`, {
+                        method: 'PUT',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(taskData)
+                    });
+                } else {
+                    response = await fetch('/api/tasks', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(taskData)
+                    });
+                }
+                
+                if (response.ok) {
+                    document.getElementById('task-form').reset();
+                    cancelEdit();
+                    loadTasks();
+                }
+            } catch (error) {
+                console.error('Error saving task:', error);
+                alert('Error saving task');
+            }
+        });
+
+        async function editTask(id) {
+            try {
+                const response = await fetch(`/api/tasks/${id}`);
+                const task = await response.json();
+                
+                document.getElementById('task-id').value = task.id;
+                document.getElementById('title').value = task.title;
+                document.getElementById('description').value = task.description;
+                document.getElementById('status').value = task.status;
+                document.getElementById('priority').value = task.priority;
+                
+                editMode = true;
+                editTaskId = id;
+                document.getElementById('form-title').textContent = 'Edit Task';
+                document.getElementById('submit-btn').textContent = 'Update Task';
+                document.getElementById('cancel-btn').style.display = 'block';
+                
+                window.scrollTo({top: 0, behavior: 'smooth'});
+            } catch (error) {
+                console.error('Error loading task:', error);
+            }
+        }
+
+        async function deleteTask(id) {
+            if (!confirm('Are you sure you want to delete this task?')) return;
+            
+            try {
+                const response = await fetch(`/api/tasks/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    loadTasks();
+                }
+            } catch (error) {
+                console.error('Error deleting task:', error);
+                alert('Error deleting task');
+            }
+        }
+
+        function cancelEdit() {
+            editMode = false;
+            editTaskId = null;
+            document.getElementById('form-title').textContent = 'Add New Task';
+            document.getElementById('submit-btn').textContent = 'Add Task';
+            document.getElementById('cancel-btn').style.display = 'none';
+            document.getElementById('task-form').reset();
+        }
+
+        document.getElementById('cancel-btn').addEventListener('click', cancelEdit);
+
+        loadTasks();
+    </script>
+</body>
+</html>
